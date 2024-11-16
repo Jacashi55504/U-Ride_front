@@ -1,15 +1,24 @@
+import { createSlice } from '@reduxjs/toolkit';
+
 const initialState = {
-    role: null,
+  isLoggedIn: false,
+  user: null,
 };
 
-export const userReducer = (state = initialState, action) => {
-    switch (action.type) {
-        case 'SET_USER_ROLE':
-            return {
-                ...state,
-                role: action.payload,
-            };
-        default:
-            return state;
-    }
-};
+const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {
+    login: (state, action) => {
+      state.isLoggedIn = true;
+      state.user = action.payload;
+    },
+    logout: (state) => {
+      state.isLoggedIn = false;
+      state.user = null;
+    },
+  },
+});
+
+export const { login, logout } = userSlice.actions; // Exporta las acciones
+export default userSlice.reducer; // Exporta el reducer

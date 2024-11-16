@@ -1,12 +1,19 @@
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
+import { Provider } from 'react-redux'; // Para Redux
+import { store } from './src/store'; 
+import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <Provider store={store}>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <AppNavigator /> {/* Configuración de AppNavigator*/}
+      </NavigationContainer>
+    </Provider>
   );
 }
 
