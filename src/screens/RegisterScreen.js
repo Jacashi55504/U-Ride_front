@@ -1,70 +1,113 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
-import { register } from '../services/authService.js';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function RegisterScreen({ navigation }) {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+  return (
+    <LinearGradient
+      colors={['#A7C7E7', '#89ABE3']} // Fondo degradado pastel
+      style={styles.container}
+    >
+      <Text style={styles.title}>Crear Cuenta</Text>
 
-    const handleRegister = async () => {
-        if (password !== confirmPassword) {
-            alert('Las contraseñas no coinciden.');
-            return;
-        }
+      {/* Campos de Registro */}
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Correo</Text>
+        <TextInput
+          style={[styles.input, { marginBottom: 10 }]}
+          placeholder="Ingresa tu correo"
+          placeholderTextColor="#FFFFFF"
+        />
+      </View>
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Contraseña</Text>
+        <TextInput
+          style={[styles.input, { marginBottom: 10 }]}
+          placeholder="Ingresa tu contraseña"
+          placeholderTextColor="#FFFFFF"
+          secureTextEntry
+        />
+      </View>
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Confirmar Contraseña</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Confirma tu contraseña"
+          placeholderTextColor="#FFFFFF"
+          secureTextEntry
+        />
+      </View>
 
-        try {
-            await register({ email, password });
-            alert('Registro exitoso');
-            navigation.navigate('Login');
-        } catch (error) {
-            alert('Error al registrar');
-        }
-    };
+      {/* Botón de Registrarse */}
+      <TouchableOpacity style={styles.registerButton}>
+        <Text style={styles.registerButtonText}>Crear Cuenta</Text>
+      </TouchableOpacity>
 
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Registrarse</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Correo Electrónico"
-                value={email}
-                onChangeText={setEmail}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Contraseña"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Confirmar Contraseña"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-            />
-            <Button title="Crear Usuario" onPress={handleRegister} />
-        </View>
-    );
+      {/* Referencia a Iniciar Sesión */}
+      <TouchableOpacity onPress={() => navigation.navigate('Welcome')}>
+        <Text style={styles.backToLogin}>
+          ¿Ya tienes una cuenta? <Text style={styles.backToLoginHighlight}>Inicia sesión</Text>
+        </Text>
+      </TouchableOpacity>
+    </LinearGradient>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#007BFF',
-    },
-    title: {
-        fontSize: 24,
-        color: '#fff',
-        marginBottom: 20,
-    },
-    input: {
-        backgroundColor: '#fff',
-        padding: 10,
-        borderRadius: 5,
-        marginBottom: 15,
-    },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 60, // Mayor separación del título
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Fondo transparente
+    borderRadius: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  registerButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 20, // Aumentado para una mayor separación vertical
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 40, // Más espacio debajo del botón
+  },
+  registerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  backToLogin: {
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  backToLoginHighlight: {
+    color: '#FFD700', // Amarillo pastel para resaltar
+    fontWeight: 'bold',
+  },
 });
