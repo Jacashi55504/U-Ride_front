@@ -10,11 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import { AuthContext } from '../context/authContext';
 import { API_URL } from '../config';
-
 
 export default function PassengerHomeScreen({ navigation }) {
   const [origen, setOrigen] = useState('');
@@ -32,7 +32,6 @@ export default function PassengerHomeScreen({ navigation }) {
 
   const handleRequestRide = async () => {
     try {
-      // Validar campos requeridos
       if (!origen || !destino) {
         Alert.alert('Error', 'Por favor ingresa origen y destino');
         return;
@@ -44,13 +43,12 @@ export default function PassengerHomeScreen({ navigation }) {
       };
       console.log('Datos a enviar:', rideData);
 
+      await axios.post(`${API_URL}/create_ride`, rideData, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
 
-      const response = await axios.post(`${API_URL}/create_ride`, rideData);
-
-      console.log('Respuesta del servidor:', response.data);
-      Alert.alert('Éxito', 'Viaje solicitado correctamente');
-      navigation.navigate('PassengerScreen');
-      
+      console.log('Viaje solicitado');
+      navigation.navigate('SearchingDriverScreen'); // Navegar a la pantalla de carga
     } catch (error) {
       console.error('Error al solicitar viaje:', error);
       Alert.alert(
@@ -61,18 +59,20 @@ export default function PassengerHomeScreen({ navigation }) {
   };
 
   return (
-    <LinearGradient
-      colors={['#A7C7E7', '#89ABE3']}
-      style={styles.container}
-    >
+    <LinearGradient colors={['#A7C7E7', '#89ABE3']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <Text style={styles.title}>Solicitar un Viaje</Text>
+        {/* Encabezado con flecha de volver */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.navigate('RoleSelection')}>
+            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Solicitar un Viaje</Text>
+        </View>
 
-        {/* Contenedor Estático */}
         <View style={styles.contentContainer}>
-          {/* Campos para Origen y Destino */}
+          {/* Campo Origen */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Origen</Text>
+            <Ionicons name="location-outline" size={20} color="#FFFFFF" style={styles.icon} />
             <TextInput
               style={styles.input}
               placeholder="Ingresa tu ubicación"
@@ -81,8 +81,10 @@ export default function PassengerHomeScreen({ navigation }) {
               onChangeText={setOrigen}
             />
           </View>
+
+          {/* Campo Destino */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Destino</Text>
+            <Ionicons name="flag-outline" size={20} color="#FFFFFF" style={styles.icon} />
             <TextInput
               style={styles.input}
               placeholder="Ingresa tu destino"
@@ -91,14 +93,13 @@ export default function PassengerHomeScreen({ navigation }) {
               onChangeText={setDestino}
             />
           </View>
+
+          {/* Selector de Hora */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Hora de Inicio</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowPicker(true)}
-            >
+            <Ionicons name="time-outline" size={20} color="#FFFFFF" style={styles.icon} />
+            <TouchableOpacity style={styles.dateButton} onPress={() => setShowPicker(true)}>
               <Text style={styles.dateButtonText}>
-                {date.toLocaleTimeString()}
+                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </TouchableOpacity>
           </View>
@@ -112,24 +113,14 @@ export default function PassengerHomeScreen({ navigation }) {
             />
           )}
 
-          {/* Botón para Pedir Viaje */}
-          <TouchableOpacity
-            style={styles.requestButton}
-            onPress={handleRequestRide}
-          >
-            <Text style={styles.requestButtonText}>Pedir Viaje</Text>
-          </TouchableOpacity>
-
-          {/* Botón para Cancelar */}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => navigation.navigate('RoleSelection')}
-          >
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          {/* Botón para Solicitar */}
+          <TouchableOpacity style={styles.requestButton} onPress={handleRequestRide}>
+            <Ionicons name="car-sport-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.requestButtonText}>Solicitar Viaje</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Mapa Desplazable */}
+        {/* Mapa */}
         <View style={styles.mapContainer}>
           <WebView
             source={{
@@ -151,72 +142,68 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    marginBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 22,
     color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 20,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
   contentContainer: {
-    marginBottom: 20, // Espaciado entre el contenido estático y el mapa
+    marginBottom: 20,
   },
   inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  input: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 10,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 15,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
+  },
+  dateButton: {
+    flex: 1,
+    paddingVertical: 10,
+  },
+  dateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
   },
   requestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#007BFF',
     paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 20,
+    borderRadius: 50,
+    marginTop: 10,
   },
   requestButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  cancelButton: {
-    backgroundColor: '#FF4D4D',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    marginLeft: 10,
   },
   mapContainer: {
-    flex: 1, // Permite al mapa ocupar el espacio restante
+    flex: 1,
     borderRadius: 10,
     overflow: 'hidden',
   },
   map: {
     height: '100%',
     width: '100%',
-  },
-  dateButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    padding: 15,
-    borderRadius: 10,
-  },
-  dateButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
   },
 });

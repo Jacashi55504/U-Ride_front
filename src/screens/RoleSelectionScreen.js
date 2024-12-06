@@ -21,7 +21,7 @@ export default function RoleSelectionScreen({ navigation }) {
         {/* Conductor */}
         <TouchableOpacity
           style={[styles.roleBox, styles.driverBox]}
-          onPress={() => navigation.navigate('DriverRequest')} // Reemplaza con la pantalla de Conductor
+          onPress={() => navigation.navigate('DriverHomeScreen')} // Reemplaza con la pantalla de Conductor
         >
           <FontAwesome5 name="car" size={48} color="#007BFF" style={styles.icon} />
           <Text style={styles.roleText}>Conductor</Text>
@@ -30,7 +30,7 @@ export default function RoleSelectionScreen({ navigation }) {
         {/* Pasajero */}
         <TouchableOpacity
           style={[styles.roleBox, styles.passengerBox]}
-          onPress={() => navigation.navigate('PassengerRequest')} 
+          onPress={() => navigation.navigate('PassengerHomeScreen')} 
         >
           <FontAwesome5 name="user" size={48} color="#007BFF" style={styles.icon} />
           <Text style={styles.roleText}>Pasajero</Text>
