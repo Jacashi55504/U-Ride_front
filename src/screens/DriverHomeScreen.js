@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,127 +17,113 @@ import { API_URL } from '../config';
 export default function DriverHomeScreen({ navigation }) {
   const [availableRides, setAvailableRides] = useState([]);
   const [acceptedRide, setAcceptedRide] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchAvailableRides = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/get_available_rides`);
-        const rides = Array.isArray(response.data) ? response.data : [];
-        setAvailableRides(rides);
-      } catch (error) {
-        console.error('Error fetching available rides:', error);
-        Alert.alert('Error', 'No se pudieron obtener los viajes disponibles.');
+  const fetchAvailableRides = async () => {
+    try {
+      console.log('Obteniendo viajes disponibles...');
+      const response = await axios.get(`${API_URL}/get_available_rides`);
+      console.log('Respuesta:', response.data);
+      
+      if (response.data.success && Array.isArray(response.data.rides)) {
+        console.log('Viajes disponibles encontrados:', response.data.rides.length);
+        setAvailableRides(response.data.rides);
+      } else {
         setAvailableRides([]);
       }
-    };
+    } catch (error) {
+      console.error('Error al obtener viajes:', error);
+      Alert.alert('Error', 'No se pudieron obtener los viajes disponibles.');
+      setAvailableRides([]);
+    }
+  };
 
+  useEffect(() => {
     fetchAvailableRides();
   }, []);
 
-  const handleAcceptRide = (ride) => {
-    setAcceptedRide(ride);
-    Alert.alert('Viaje aceptado', 'Has aceptado el viaje.');
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await fetchAvailableRides();
+    setRefreshing(false);
+  }, []);
+
+  const handleAcceptRide = async (ride) => {
+    try {
+      console.log('Intentando aceptar viaje:', ride._id);
+      const response = await axios.post(`${API_URL}/accept_ride/${ride._id}`);
+      console.log('Respuesta del servidor:', response.data);
+  
+      if (response.data.success) {
+        Alert.alert('Éxito', 'Viaje aceptado exitosamente');
+        // Navegar a la pantalla del conductor con los detalles del viaje
+        navigation.navigate('DriverScreen', { ride: response.data.ride });
+        // Actualizar la lista de viajes disponibles
+        fetchAvailableRides();
+      } else {
+        Alert.alert('Error', response.data.msg || 'No se pudo aceptar el viaje');
+      }
+    } catch (error) {
+      console.error('Error al aceptar viaje:', error);
+      console.error('Detalles del error:', error.response?.data);
+      Alert.alert(
+        'Error',
+        error.response?.data?.msg || 'No se pudo aceptar el viaje'
+      );
+    }
+  };
+
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
   };
 
   return (
     <LinearGradient colors={['#A7C7E7', '#89ABE3']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Header con flecha para volver */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.navigate('RoleSelection')}>
             <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Viajes Disponibles</Text>
-          <View style={{ width: 28 }} /> {/* Espaciador para alinear */}
+          <View style={{ width: 28 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Viaje Hardcoded para pruebas */}
-          <View style={styles.rideBox}>
-            <Text style={styles.label}>Origen: Facultad de Ingeniería</Text>
-            <Text style={styles.label}>Destino: Biblioteca Central</Text>
-            <Text style={styles.label}>Distancia: 4.5 km</Text>
-            <Text style={styles.label}>Tarifa: $50.00 MXN</Text>
-            <TouchableOpacity
-              style={[
-                styles.acceptButton,
-                acceptedRide && styles.disabledButton,
-              ]}
-              onPress={() =>
-                handleAcceptRide({
-                  origen: 'Facultad de Ingeniería',
-                  destino: 'Biblioteca Central',
-                  tarifa: '$50.00 MXN',
-                })
-              }
-              disabled={!!acceptedRide}
-            >
-              <Text style={styles.acceptButtonText}>
-                {acceptedRide ? 'Viaje Aceptado' : 'Aceptar Viaje'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Rides from Backend */}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {availableRides.length === 0 ? (
             <Text style={styles.noRidesText}>No hay viajes disponibles.</Text>
           ) : (
-            availableRides.map((ride, index) => (
-              <View key={index} style={styles.rideBox}>
+            availableRides.map((ride) => (
+              <View key={ride._id} style={styles.rideBox}>
                 <Text style={styles.label}>Origen: {ride.origen}</Text>
                 <Text style={styles.label}>Destino: {ride.destino}</Text>
                 <Text style={styles.label}>
-                  Distancia: {ride.distancia || 'N/A'}
+                  Hora de inicio: {formatDateTime(ride.hora_inicio)}
                 </Text>
-                <Text style={styles.label}>Tarifa: {ride.tarifa || 'N/A'}</Text>
+                <Text style={styles.label}>
+                  Pasajero: {ride.pasajero?.nombre || 'No disponible'}
+                </Text>
+                <Text style={styles.label}>
+                  Email: {ride.pasajero?.email || 'No disponible'}
+                </Text>
+                <Text style={styles.label}>
+                  Estado: {ride.estado || 'pendiente'}
+                </Text>
                 <TouchableOpacity
-                  style={[
-                    styles.acceptButton,
-                    acceptedRide && styles.disabledButton,
-                  ]}
+                  style={styles.acceptButton}
                   onPress={() => handleAcceptRide(ride)}
-                  disabled={!!acceptedRide}
                 >
-                  <Text style={styles.acceptButtonText}>
-                    {acceptedRide ? 'Viaje Aceptado' : 'Aceptar Viaje'}
-                  </Text>
+                  <Text style={styles.acceptButtonText}>Aceptar Viaje</Text>
                 </TouchableOpacity>
               </View>
             ))
           )}
         </ScrollView>
-
-        {/* Barra de Navegación */}
-        <View style={styles.navbar}>
-          <TouchableOpacity onPress={() => navigation.navigate('DriverHomeScreen')}>
-            <Ionicons name="home-outline" size={28} color="#FFFFFF" />
-            <Text style={styles.navText}>Home</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('CarCrudScreen')}>
-            <Ionicons name="car-outline" size={28} color="#FFFFFF" />
-            <Text style={styles.navText}>Carro</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            disabled={!acceptedRide}
-            onPress={() =>
-              acceptedRide && navigation.navigate('DriverScreen', { acceptedRide })
-            }
-          >
-            <Ionicons
-              name="briefcase-outline"
-              size={28}
-              color={acceptedRide ? '#FFFFFF' : '#B0BEC5'}
-            />
-            <Text
-              style={[
-                styles.navText,
-                { color: acceptedRide ? '#FFFFFF' : '#B0BEC5' },
-              ]}
-            >
-              Viaje
-            </Text>
-          </TouchableOpacity>
-        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -148,75 +135,53 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingBottom: 60,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    padding: 16,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    flex: 1,
-    textAlign: 'center',
   },
   scrollContainer: {
-    padding: 20,
+    padding: 16,
   },
   rideBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 10,
-    padding: 15,
-    marginBottom: 20,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   label: {
     fontSize: 16,
-    color: '#555',
     marginBottom: 8,
+    color: '#333',
   },
   acceptButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 10,
-    borderRadius: 5,
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
   acceptButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  disabledButton: {
-    backgroundColor: '#B0BEC5',
-    opacity: 0.8,
-  },
   noRidesText: {
+    textAlign: 'center',
     fontSize: 16,
     color: '#FFFFFF',
-    textAlign: 'center',
     marginTop: 20,
-  },
-  navbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#007BFF',
-    height: 60,
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-  },
-  navText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    textAlign: 'center',
   },
 });
