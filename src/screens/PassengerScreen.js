@@ -3,55 +3,81 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   ScrollView,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import { AuthContext } from '../context/authContext'; // Contexto para autenticación
-import { API_URL } from '../config'; // Dirección del backend
+import { API_URL } from '../config';
+import { AuthContext } from '../context/authContext';
 
-export default function PassengerScreen({ navigation }) {
+export default function PassengerScreen({ route, navigation }) {
   const [rideDetails, setRideDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const { userToken } = useContext(AuthContext);
+  const [ride, setRide] = useState(null);
+  
+  const { ride: initialRide } = route.params || {};
+  const ride_id = initialRide?.id;
+
+  console.log('Parámetros recibidos:', { 
+    initialRide, 
+    ride_id,
+    routeParams: route.params 
+  });
 
   useEffect(() => {
-    const fetchRideDetails = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/ride/<ride_id>`, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
-        if (response.data) {
-          setRideDetails(response.data);
-        } else {
-          Alert.alert('Error', 'No se encontró información del viaje');
-        }
-      } catch (error) {
-        console.error('Error fetching ride details:', error);
-        Alert.alert(
-          'Error',
-          error.response?.data?.msg || 'Error al obtener la información del viaje'
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+    console.log('useEffect ejecutándose, ride_id:', ride_id);
+    if (ride_id) {
+      fetchRideDetails();
+    } else {
+      console.log('No hay ride_id disponible');
+      setLoading(false);
+    }
+  }, [ride_id]);
 
-    fetchRideDetails();
-  }, []);
+  const fetchRideDetails = async () => {
+    console.log('Iniciando fetchRideDetails');
+    try {
+      console.log('Haciendo petición a:', `${API_URL}/ride/${ride_id}`);
+      const response = await axios.get(`${API_URL}/ride/${ride_id}`);
+      console.log('Respuesta del servidor:', response.data);
+      
+      if (response.data.ride) {
+        console.log('Ride data recibida:', response.data.ride);
+        setRide(response.data.ride);
+      } else {
+        console.log('No se recibió información del ride en la respuesta');
+        // Si no hay datos del ride, usamos los datos iniciales
+        if (initialRide) {
+          console.log('Usando datos iniciales del ride:', initialRide);
+          setRide(initialRide);
+        }
+      }
+    } catch (error) {
+      console.error('Error completo:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      // Si hay un error al obtener los datos actualizados, usamos los datos iniciales
+      if (initialRide) {
+        console.log('Usando datos iniciales del ride debido al error:', initialRide);
+        setRide(initialRide);
+      }
+      Alert.alert('Error', 'No se pudo obtener la información del viaje');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCancel = () => {
     Alert.alert(
       'Cancelar Viaje',
-      '¿Estás seguro de que deseas cancelar este viaje?',
+      '¿Estás seguro que deseas cancelar el viaje?',
       [
         {
           text: 'No',
@@ -59,98 +85,85 @@ export default function PassengerScreen({ navigation }) {
         },
         {
           text: 'Sí',
-          onPress: () => {
-            navigation.navigate('PassengerHomeScreen');
+          onPress: async () => {
+            try {
+              const response = await axios.delete(`${API_URL}/delete_ride/${ride_id}`);
+              Alert.alert('Éxito', 'Viaje cancelado correctamente');
+              navigation.goBack();
+            } catch (error) {
+              console.error('Error al cancelar el viaje:', error);
+              Alert.alert('Error', 'No se pudo cancelar el viaje');
+            }
           },
         },
       ]
     );
   };
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007BFF" />
+      </View>
+    );
+  }
+
   return (
     <LinearGradient colors={['#A7C7E7', '#89ABE3']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => handleCancel()}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Detalles del Viaje</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Mapa */}
-          <View style={styles.mapContainer}>
-            <WebView
-              source={{
-                uri: 'https://www.google.com/maps/embed/v1/place?q=Facultad+de+Ingenieria&key=YOUR_API_KEY',
-              }}
-              style={styles.map}
-            />
-          </View>
-
-          {loading ? (
-            <Text style={styles.loadingText}>Cargando información del viaje...</Text>
-          ) : rideDetails ? (
-            <>
-              {/* Información del Conductor */}
-              <View style={styles.infoBox}>
-                <View style={styles.driverInfo}>
-                  <Image
-                    source={{
-                      uri:
-                        rideDetails.conductor?.photo ||
-                        'https://via.placeholder.com/100',
-                    }}
-                    style={styles.driverImage}
-                  />
-                  <View>
-                    <Text style={styles.driverName}>
-                      {rideDetails.conductor?.username || 'Conductor'}
-                    </Text>
-                    <Text style={styles.driverRating}>
-                      Calificación: {rideDetails.conductor?.rating || 'N/A'}/5
-                    </Text>
-                  </View>
+        <ScrollView style={styles.content}>
+          {ride ? (
+            <View style={styles.rideContainer}>
+              <View style={styles.rideInfo}>
+                <View style={styles.infoRow}>
+                  <Ionicons name="location-outline" size={24} color="#FFFFFF" />
+                  <Text style={styles.infoText}>Origen: {ride.origen}</Text>
                 </View>
+                
+                <View style={styles.infoRow}>
+                  <Ionicons name="flag-outline" size={24} color="#FFFFFF" />
+                  <Text style={styles.infoText}>Destino: {ride.destino}</Text>
+                </View>
+                
+                <View style={styles.infoRow}>
+                  <Ionicons name="time-outline" size={24} color="#FFFFFF" />
+                  <Text style={styles.infoText}>
+                    Hora de inicio: {new Date(ride.hora_inicio).toLocaleString()}
+                  </Text>
+                </View>
+                
+                <View style={styles.infoRow}>
+                  <Ionicons name="alert-circle-outline" size={24} color="#FFFFFF" />
+                  <Text style={styles.infoText}>Estado: {ride.estado}</Text>
+                </View>
+
+                {ride.conductor_id && (
+                  <View style={styles.driverSection}>
+                    <Text style={styles.sectionTitle}>Información del Conductor</Text>
+                    <Text style={styles.infoText}>ID Conductor: {ride.conductor_id}</Text>
+                  </View>
+                )}
               </View>
 
-              {/* Información del Coche */}
-              <View style={styles.infoBox}>
-                <Ionicons name="car-sport" size={24} color="#007BFF" style={styles.icon} />
-                <Text style={styles.carInfo}>
-                  Modelo: {rideDetails.coche?.modelo || 'N/A'}
-                </Text>
-                <Text style={styles.carInfo}>
-                  Color: {rideDetails.coche?.color || 'N/A'}
-                </Text>
-                <Text style={styles.carInfo}>
-                  Placas: {rideDetails.coche?.placas || 'N/A'}
-                </Text>
-              </View>
-            </>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={handleCancel}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar Viaje</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
-            <Text style={styles.loadingText}>No se encontró el viaje.</Text>
+            <View style={styles.noRideContainer}>
+              <Text style={styles.noRideText}>No hay información del viaje disponible</Text>
+            </View>
           )}
-
-          {/* Detalles del Viaje */}
-          <View style={styles.infoBox}>
-            <Ionicons name="location" size={24} color="#007BFF" style={styles.icon} />
-            <Text style={styles.tripInfo}>
-              Origen: {rideDetails?.origen || 'N/A'}
-            </Text>
-            <Text style={styles.tripInfo}>
-              Destino: {rideDetails?.destino || 'N/A'}
-            </Text>
-            <Text style={styles.tripInfo}>
-              Costo: {rideDetails?.costo || 'N/A'} MXN
-            </Text>
-          </View>
-
-          {/* Botón Cancelar */}
-          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-            <Ionicons name="close-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.cancelButtonText}>Cancelar Viaje</Text>
-          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -163,94 +176,82 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    marginBottom: 10,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     color: '#FFFFFF',
     fontWeight: 'bold',
     marginLeft: 10,
   },
-  scrollContainer: {
-    padding: 15,
+  content: {
+    flex: 1,
+    padding: 16,
   },
-  mapContainer: {
-    height: 200,
-    borderRadius: 15,
-    overflow: 'hidden',
+  rideContainer: {
+    flex: 1,
+  },
+  rideInfo: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 20,
   },
-  map: {
-    height: '100%',
-    width: '100%',
-  },
-  infoBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  driverInfo: {
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  driverImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
-  },
-  driverName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  driverRating: {
-    fontSize: 14,
-    color: '#6C757D',
-  },
-  carInfo: {
-    fontSize: 14,
-    color: '#495057',
-    marginBottom: 5,
-  },
-  tripInfo: {
-    fontSize: 14,
-    color: '#495057',
-    marginBottom: 5,
-  },
-  loadingText: {
-    fontSize: 16,
+  infoText: {
     color: '#FFFFFF',
-    textAlign: 'center',
+    fontSize: 16,
+    marginLeft: 10,
+    flex: 1,
+  },
+  driverSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
   cancelButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    backgroundColor: '#FF4444',
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#FF4D4D',
-    paddingVertical: 15,
-    borderRadius: 50,
     marginTop: 20,
   },
   cancelButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 10,
   },
-  icon: {
-    marginBottom: 10,
+  noRideContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noRideText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

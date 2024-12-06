@@ -43,14 +43,29 @@ export default function PassengerHomeScreen({ navigation }) {
       };
       console.log('Datos a enviar:', rideData);
 
-      await axios.post(`${API_URL}/create_ride`, rideData, {
-        headers: { Authorization: `Bearer ${userToken}` },
+      const response = await axios.post(`${API_URL}/create_ride`, rideData);
+      console.log('Respuesta completa del servidor:', response);
+      console.log('Datos de la respuesta:', response.data);
+      console.log('Ride en la respuesta:', response.data.ride);
+
+      if (!response.data.ride) {
+        console.error('No se recibió el objeto ride en la respuesta');
+        Alert.alert('Error', 'No se recibió la información del viaje correctamente');
+        return;
+      }
+
+      console.log('Navegando a PassengerScreen con:', {
+        ride: response.data.ride
       });
 
-      console.log('Viaje solicitado');
-      navigation.navigate('SearchingDriverScreen'); // Navegar a la pantalla de carga
+      Alert.alert('Éxito', 'Viaje solicitado correctamente');
+      navigation.navigate('PassengerScreen', {
+        ride: response.data.ride
+      });
     } catch (error) {
-      console.error('Error al solicitar viaje:', error);
+      console.error('Error completo al solicitar viaje:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       Alert.alert(
         'Error',
         error.response?.data?.msg || 'Error al solicitar el viaje'
