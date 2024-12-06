@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,28 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient'; // Para el fondo con degradado
 import { FontAwesome5 } from '@expo/vector-icons'; // Iconos de FontAwesome
-
+import { AuthContext } from '../context/authContext';
 export default function LoginScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login } = useContext(AuthContext);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Por favor ingresa todos los campos');
+      return;
+    }
+    const result = await login(email, password);
+    if (result.success) {
+      navigation.navigate('RoleSelection');
+    } else {
+      Alert.alert('Error', result.message || 'Error al iniciar sesión');
+    }
+  };
   return (
     <LinearGradient
       colors={['#A7C7E7', '#89ABE3']} // Fondo con colores pastel degradados
@@ -52,6 +69,10 @@ export default function LoginScreen({ navigation }) {
           style={[styles.input, { marginBottom: 10 }]}
           placeholder="Ingresa tu correo"
           placeholderTextColor="#FFFFFF"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
       </View>
       <View style={styles.inputContainer}>
@@ -61,6 +82,8 @@ export default function LoginScreen({ navigation }) {
           placeholder="Ingresa tu contraseña"
           placeholderTextColor="#FFFFFF"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
       </View>
 
@@ -74,7 +97,7 @@ export default function LoginScreen({ navigation }) {
 
       {/* Botón de Iniciar Sesión */}
       <TouchableOpacity 
-        onPress={() => navigation.navigate('RoleSelection')}
+        onPress={handleLogin}
         style={styles.loginButton}>
         <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
       </TouchableOpacity>

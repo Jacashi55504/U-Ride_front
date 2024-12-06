@@ -1,14 +1,46 @@
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AuthContext } from '../context/authContext';
+
 
 export default function RegisterScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const { register } = useContext(AuthContext);
+
+  const handleRegister = async () => {
+    try {
+      // Validaciones
+      if (!email || !password || !confirmPassword) {
+        Alert.alert('Error', 'Por favor completa todos los campos');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        Alert.alert('Error', 'Las contraseñas no coinciden');
+        return;
+      }
+
+      const result = await register(email, password);
+      if (result.success) {
+        navigation.navigate('RoleSelection');
+      } else {
+        Alert.alert('Error', result.message || 'Error en el registro');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Ocurrió un error durante el registro');
+    }
+  };
+
   return (
     <LinearGradient
       colors={['#A7C7E7', '#89ABE3']} // Fondo degradado pastel
@@ -23,6 +55,10 @@ export default function RegisterScreen({ navigation }) {
           style={[styles.input, { marginBottom: 10 }]}
           placeholder="Ingresa tu correo"
           placeholderTextColor="#FFFFFF"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
       </View>
       <View style={styles.inputContainer}>
@@ -32,6 +68,8 @@ export default function RegisterScreen({ navigation }) {
           placeholder="Ingresa tu contraseña"
           placeholderTextColor="#FFFFFF"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
       </View>
       <View style={styles.inputContainer}>
@@ -41,11 +79,14 @@ export default function RegisterScreen({ navigation }) {
           placeholder="Confirma tu contraseña"
           placeholderTextColor="#FFFFFF"
           secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
         />
       </View>
 
       {/* Botón de Registrarse */}
-      <TouchableOpacity style={styles.registerButton}>
+      <TouchableOpacity style={styles.registerButton}
+      onPress={handleRegister}>
         <Text style={styles.registerButtonText}>Crear Cuenta</Text>
       </TouchableOpacity>
 
