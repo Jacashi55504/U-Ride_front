@@ -9,7 +9,8 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import PassengerHomeScreen from '../screens/PassengerHomeScreen';
 import DriverHomeScreen from '../screens/DriverHomeScreen';
 import SearchingDriverScreen from '../screens/SearchingDriverScreen';
-import CarCrudScreen from '../screens/CarCrudScreen'; 
+import CarCrudScreen from '../screens/CarCrudScreen';
+import MyRidesScreen from '../screens/MyRidesScreen';
 
 const Stack = createStackNavigator();
 
@@ -19,7 +20,7 @@ export default function AppNavigator() {
       initialRouteName="Welcome"
       screenOptions={{
         headerShown: false,
-        animationEnabled: false, // Desactiva animación globalmente
+        animationEnabled: false,
       }}
     >
       <Stack.Screen name="Welcome" component={LoginScreen} />
@@ -31,7 +32,8 @@ export default function AppNavigator() {
       <Stack.Screen name="PassengerScreen" component={PassengerScreen} />
       <Stack.Screen name="DriverScreen" component={DriverScreen} />
       <Stack.Screen name="SearchingDriverScreen" component={SearchingDriverScreen} />
-      <Stack.Screen name="CarCrudScreen" component={CarCrudScreen} /> 
+      <Stack.Screen name="CarCrudScreen" component={CarCrudScreen} />
+      <Stack.Screen name="MyRides" component={MyRidesScreen} />
     </Stack.Navigator>
   );
 }
