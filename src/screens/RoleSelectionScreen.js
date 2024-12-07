@@ -7,44 +7,40 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient'; // Para fondo degradado
 import { FontAwesome5 } from '@expo/vector-icons'; // Para íconos
+import Navbar from '../components/Navbar'; // Importar Navbar
 
 export default function RoleSelectionScreen({ navigation }) {
   return (
-    <LinearGradient
-      colors={['#A7C7E7', '#89ABE3']} // Fondo degradado pastel
-      style={styles.container}
-    >
-      <Text style={styles.title}>Selecciona tu rol</Text>
-
-      {/* División de Roles */}
-      <View style={styles.rolesContainer}>
-        {/* Conductor */}
-        <TouchableOpacity
-          style={[styles.roleBox, styles.driverBox]}
-          onPress={() => navigation.navigate('DriverHomeScreen')} // Reemplaza con la pantalla de Conductor
-        >
-          <FontAwesome5 name="car" size={48} color="#007BFF" style={styles.icon} />
-          <Text style={styles.roleText}>Conductor</Text>
-        </TouchableOpacity>
-
-        {/* Pasajero */}
-        <TouchableOpacity
-          style={[styles.roleBox, styles.passengerBox]}
-          onPress={() => navigation.navigate('PassengerHomeScreen')} 
-        >
-          <FontAwesome5 name="user" size={48} color="#007BFF" style={styles.icon} />
-          <Text style={styles.roleText}>Pasajero</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Cerrar Sesión */}
-      <TouchableOpacity
-        style={styles.logoutContainer}
-        onPress={() => navigation.navigate('Welcome')} // Redirige a la pantalla de inicio de sesión
+    <View style={{ flex: 1 }}>
+      <LinearGradient
+        colors={['#A7C7E7', '#89ABE3']} // Fondo degradado pastel
+        style={styles.container}
       >
-        <Text style={styles.logoutText}>Cerrar sesión</Text>
-      </TouchableOpacity>
-    </LinearGradient>
+        <Text style={styles.title}>Selecciona tu rol</Text>
+
+        {/* División de Roles */}
+        <View style={styles.rolesContainer}>
+          {/* Conductor */}
+          <TouchableOpacity
+            style={[styles.roleBox, styles.driverBox]}
+            onPress={() => navigation.navigate('DriverHomeScreen')} // Reemplaza con la pantalla de Conductor
+          >
+            <FontAwesome5 name="car" size={48} color="#007BFF" style={styles.icon} />
+            <Text style={styles.roleText}>Conductor</Text>
+          </TouchableOpacity>
+
+          {/* Pasajero */}
+          <TouchableOpacity
+            style={[styles.roleBox, styles.passengerBox]}
+            onPress={() => navigation.navigate('PassengerHomeScreen')} 
+          >
+            <FontAwesome5 name="user" size={48} color="#007BFF" style={styles.icon} />
+            <Text style={styles.roleText}>Pasajero</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+      <Navbar />
+    </View>
   );
 }
 
@@ -92,15 +88,5 @@ const styles = StyleSheet.create({
   },
   passengerBox: {
     backgroundColor: '#E8EAF6', // Fondo pastel para pasajero
-  },
-  logoutContainer: {
-    marginTop: 40, // Espaciado desde los roles
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 16,
-    color: '#FFD700', // Amarillo pastel para resaltar
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
   },
 });
